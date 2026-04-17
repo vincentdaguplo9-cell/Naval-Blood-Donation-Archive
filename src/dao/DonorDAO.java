@@ -145,6 +145,21 @@ public class DonorDAO {
         }
     }
 
+    public boolean updateDonationStatusV2(int donorId, Date lastDonationDate, Date deferredUntil, String eligibilityStatus) {
+        String sql = "UPDATE donor_table SET last_donation_date = ?, deferred_until = ?, eligibility_status = ? WHERE donor_id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDate(1, lastDonationDate);
+            ps.setDate(2, deferredUntil);
+            ps.setString(3, eligibilityStatus);
+            ps.setInt(4, donorId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     private Donor mapRow(ResultSet rs) throws SQLException {
         int id = rs.getInt("donor_id");
         String first = rs.getString("first_name");

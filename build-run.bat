@@ -16,7 +16,7 @@ echo Compiling...
 javac --module-path "%PATH_TO_FX%" --add-modules %FX_MODULES% ^
   -cp "%CP%" ^
   -d build\classes ^
-  src\Main.java src\database\DBConnection.java src\model\*.java src\dao\*.java src\ui\*.java src\util\*.java
+  src\Main.java src\database\*.java src\model\*.java src\dao\*.java src\ui\*.java src\util\*.java
 
 if errorlevel 1 (
   echo Build failed.

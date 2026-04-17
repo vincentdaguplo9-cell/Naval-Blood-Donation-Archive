@@ -9,6 +9,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
 import javafx.scene.control.Pagination;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -16,6 +17,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import model.Donor;
@@ -40,20 +43,24 @@ public class DonorListFrame extends Stage {
 
         searchField = new TextField();
         UIStyle.applyInputStyle(searchField);
+        searchField.setPromptText("Search name, blood type, phone");
 
-        Button searchBtn = UIStyle.primaryButton("Search");
+        Button searchBtn = UIStyle.primaryButton("Search", "refresh");
         searchBtn.setOnAction(e -> loadDonors(searchField.getText().trim()));
 
-        Button refreshBtn = UIStyle.primaryButton("Refresh");
+        Button refreshBtn = UIStyle.secondaryButton("Refresh", "refresh");
         refreshBtn.setOnAction(e -> loadDonors(""));
 
-        Button addBtn = UIStyle.primaryButton("Add Donor");
+        Button dashboardBtn = UIStyle.secondaryButton("Dashboard", "dashboard");
+        dashboardBtn.setOnAction(e -> DashboardFrame.showWindow());
+
+        Button addBtn = UIStyle.primaryButton("Add Donor", "donor");
         addBtn.setOnAction(e -> openDonorForm(null));
 
-        Button editBtn = UIStyle.primaryButton("Edit Selected");
+        Button editBtn = UIStyle.secondaryButton("Edit Selected");
         editBtn.setOnAction(e -> editSelected());
 
-        Button deleteBtn = UIStyle.primaryButton("Delete Selected");
+        Button deleteBtn = UIStyle.dangerButton("Delete Selected");
         deleteBtn.setOnAction(e -> deleteSelected());
 
         HBox topPanel = new HBox(8, searchField, searchBtn, refreshBtn);
@@ -64,6 +71,7 @@ public class DonorListFrame extends Stage {
 
         donorTable = new TableView<>();
         UIStyle.applyTableStyle(donorTable);
+        donorTable.setPlaceholder(UIStyle.helperLabel("No donors found. Try a name, blood type, or phone number, or add a donor."));
         configureDonorTable();
         applyZebraRows();
 
@@ -74,11 +82,24 @@ public class DonorListFrame extends Stage {
         pagination.setPageFactory(this::createPage);
 
         VBox centerBox = new VBox(10, donorTable, pagination);
+        centerBox.setPadding(new Insets(12));
 
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: " + UIStyle.BG + ";");
-        root.setPadding(new Insets(12));
-        root.setTop(topPanel);
+        root.setStyle(UIStyle.pageBackground());
+        root.setPadding(new Insets(0));
+
+        HBox header = UIStyle.appHeader("Donor Management", dashboardBtn);
+        VBox topWrap = new VBox(10, header, topPanel);
+        topWrap.setPadding(new Insets(0, 0, 8, 0));
+        topPanel.setPadding(new Insets(0, 12, 0, 12));
+        UIStyle.applyPanelStyle(topPanel);
+        topPanel.setPadding(new Insets(14, 16, 14, 16));
+
+        btnPanel.setPadding(new Insets(0, 12, 12, 12));
+        UIStyle.applyPanelStyle(btnPanel);
+        btnPanel.setPadding(new Insets(14, 16, 14, 16));
+
+        root.setTop(topWrap);
         root.setCenter(centerBox);
         root.setBottom(btnPanel);
 
@@ -94,12 +115,14 @@ public class DonorListFrame extends Stage {
             instance = new DonorListFrame();
             instance.setOnHidden(e -> instance = null);
         }
+        instance.setIconified(false);
+        instance.setMaximized(true);
         instance.show();
         instance.toFront();
     }
 
     private void configureDonorTable() {
-        TableColumn<Donor, Integer> idCol = new TableColumn<>("ID");
+        TableColumn<Donor, Integer> idCol = new TableColumn<>("Donor ID");
         idCol.setCellValueFactory(new PropertyValueFactory<>("donorId"));
 
         TableColumn<Donor, String> firstCol = new TableColumn<>("First Name");
@@ -122,6 +145,7 @@ public class DonorListFrame extends Stage {
 
         TableColumn<Donor, String> eligibilityCol = new TableColumn<>("Eligibility");
         eligibilityCol.setCellValueFactory(new PropertyValueFactory<>("eligibilityStatus"));
+        UIStyle.applyStatusBadgeColumn(eligibilityCol);
 
         donorTable.getColumns().addAll(idCol, firstCol, lastCol, bloodCol, contactCol, addressCol, lastDonationCol, eligibilityCol);
     }
@@ -199,11 +223,7 @@ public class DonorListFrame extends Stage {
                 } else if (isSelected()) {
                     setStyle("");
                 } else {
-                    if (getIndex() % 2 == 0) {
-                        setStyle("-fx-background-color: #ffffff;");
-                    } else {
-                        setStyle("-fx-background-color: #f5f7fa;");
-                    }
+                    setStyle(UIStyle.lightRowStyle(getIndex()));
                 }
             }
         });

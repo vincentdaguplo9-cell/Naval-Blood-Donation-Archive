@@ -12,6 +12,13 @@ public class BloodUnit {
     private Date expiryDate;
     private String status;
 
+    // V2 fields (optional for legacy data).
+    private Integer sessionId;
+    private String unitCode;
+    private String component;
+    private String testStatus;
+    private String storageLocation;
+
     public BloodUnit() {
     }
 
@@ -24,6 +31,17 @@ public class BloodUnit {
         this.collectionDate = collectionDate;
         this.expiryDate = expiryDate;
         this.status = status;
+    }
+
+    public BloodUnit(int unitId, int donorId, String bloodType, int volumeMl,
+                     Date collectionDate, Date expiryDate, String status,
+                     Integer sessionId, String unitCode, String component, String testStatus, String storageLocation) {
+        this(unitId, donorId, bloodType, volumeMl, collectionDate, expiryDate, status);
+        this.sessionId = sessionId;
+        this.unitCode = unitCode;
+        this.component = component;
+        this.testStatus = testStatus;
+        this.storageLocation = storageLocation;
     }
 
     public int getUnitId() {
@@ -80,5 +98,45 @@ public class BloodUnit {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Integer getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(Integer sessionId) {
+        this.sessionId = sessionId;
+    }
+
+    public String getUnitCode() {
+        return unitCode;
+    }
+
+    public void setUnitCode(String unitCode) {
+        this.unitCode = unitCode;
+    }
+
+    public String getComponent() {
+        return component;
+    }
+
+    public void setComponent(String component) {
+        this.component = component;
+    }
+
+    public String getTestStatus() {
+        return testStatus;
+    }
+
+    public void setTestStatus(String testStatus) {
+        this.testStatus = testStatus;
+    }
+
+    public String getStorageLocation() {
+        return storageLocation;
+    }
+
+    public void setStorageLocation(String storageLocation) {
+        this.storageLocation = storageLocation;
     }
 }

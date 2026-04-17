@@ -10,6 +10,7 @@ import javafx.print.PrinterJob;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
@@ -18,6 +19,8 @@ import javafx.scene.control.Pagination;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -75,20 +78,39 @@ public class ReportFrame extends Stage {
         tabs.getTabs().add(new Tab("Inventory", new VBox(10, inventoryTable, inventoryPagination)));
         tabs.getTabs().add(new Tab("Donation History", new VBox(10, transactionTable, transactionPagination)));
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+        tabs.setStyle(
+                "-fx-background-color: transparent;" +
+                "-fx-tab-min-width: 140;" +
+                "-fx-tab-max-height: 40;"
+        );
+
+        Button dashboardBtn = UIStyle.secondaryButton("Dashboard", "dashboard");
+        dashboardBtn.setOnAction(e -> DashboardFrame.showWindow());
 
         HBox exportPanel = new HBox(10);
         exportPanel.setAlignment(Pos.CENTER_LEFT);
-        Button csvBtn = UIStyle.primaryButton("Export CSV");
+        Button csvBtn = UIStyle.primaryButton("Export CSV", "report");
         csvBtn.setOnAction(e -> exportCsv());
-        Button pdfBtn = UIStyle.primaryButton("Export PDF");
+        Button pdfBtn = UIStyle.secondaryButton("Export PDF", "report");
         pdfBtn.setOnAction(e -> exportPdf());
         exportPanel.getChildren().addAll(csvBtn, pdfBtn);
 
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: " + UIStyle.BG + ";");
-        root.setPadding(new Insets(12));
-        root.setTop(exportPanel);
-        root.setCenter(tabs);
+        root.setStyle(UIStyle.pageBackground());
+        root.setPadding(new Insets(0));
+
+        HBox header = UIStyle.appHeader("Reports", dashboardBtn);
+        VBox topWrap = new VBox(10, header, exportPanel);
+        topWrap.setPadding(new Insets(0, 0, 8, 0));
+        UIStyle.applyPanelStyle(exportPanel);
+        exportPanel.setPadding(new Insets(14, 16, 14, 16));
+
+        VBox centerWrap = new VBox(tabs);
+        centerWrap.setPadding(new Insets(12));
+        UIStyle.applyPanelStyle(centerWrap);
+
+        root.setTop(topWrap);
+        root.setCenter(centerWrap);
 
         Scene scene = new Scene(root, 900, 550);
         setScene(scene);
@@ -99,6 +121,7 @@ public class ReportFrame extends Stage {
             instance = new ReportFrame();
             instance.setOnHidden(e -> instance = null);
         }
+        instance.setIconified(false);
         instance.show();
         instance.toFront();
     }
@@ -107,6 +130,7 @@ public class ReportFrame extends Stage {
         TableView<Donor> table = new TableView<>();
         UIStyle.applyTableStyle(table);
         applyZebraRows(table);
+        table.setPlaceholder(UIStyle.helperLabel("No donor records available for this report."));
 
         TableColumn<Donor, Integer> idCol = new TableColumn<>("ID");
         idCol.setCellValueFactory(new PropertyValueFactory<>("donorId"));
@@ -124,6 +148,7 @@ public class ReportFrame extends Stage {
         lastDonationCol.setCellValueFactory(new PropertyValueFactory<>("lastDonationDate"));
         TableColumn<Donor, String> eligibilityCol = new TableColumn<>("Eligibility");
         eligibilityCol.setCellValueFactory(new PropertyValueFactory<>("eligibilityStatus"));
+        UIStyle.applyStatusBadgeColumn(eligibilityCol);
 
         table.getColumns().addAll(idCol, firstCol, lastCol, bloodCol, contactCol, addressCol, lastDonationCol, eligibilityCol);
 
@@ -136,6 +161,7 @@ public class ReportFrame extends Stage {
         TableView<BloodUnit> table = new TableView<>();
         UIStyle.applyTableStyle(table);
         applyZebraRows(table);
+        table.setPlaceholder(UIStyle.helperLabel("No inventory records available for this report."));
 
         TableColumn<BloodUnit, Integer> idCol = new TableColumn<>("Unit ID");
         idCol.setCellValueFactory(new PropertyValueFactory<>("unitId"));
@@ -151,6 +177,7 @@ public class ReportFrame extends Stage {
         expiryCol.setCellValueFactory(new PropertyValueFactory<>("expiryDate"));
         TableColumn<BloodUnit, String> statusCol = new TableColumn<>("Status");
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+        UIStyle.applyStatusBadgeColumn(statusCol);
 
         table.getColumns().addAll(idCol, donorCol, bloodCol, volumeCol, collectionCol, expiryCol, statusCol);
 
@@ -163,6 +190,7 @@ public class ReportFrame extends Stage {
         TableView<DonationTransaction> table = new TableView<>();
         UIStyle.applyTableStyle(table);
         applyZebraRows(table);
+        table.setPlaceholder(UIStyle.helperLabel("No transaction records available for this report."));
 
         TableColumn<DonationTransaction, Integer> idCol = new TableColumn<>("Transaction ID");
         idCol.setCellValueFactory(new PropertyValueFactory<>("transactionId"));
@@ -243,11 +271,7 @@ public class ReportFrame extends Stage {
                 } else if (isSelected()) {
                     setStyle("");
                 } else {
-                    if (getIndex() % 2 == 0) {
-                        setStyle("-fx-background-color: #ffffff;");
-                    } else {
-                        setStyle("-fx-background-color: #f5f7fa;");
-                    }
+                    setStyle(UIStyle.lightRowStyle(getIndex()));
                 }
             }
         });

@@ -1,6 +1,8 @@
 package ui;
 
 import dao.AdminDAO;
+import javafx.beans.binding.Bindings;
+import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -9,107 +11,193 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.beans.binding.Bindings;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+import util.AdminSession;
+
+import java.nio.file.Paths;
 
 // Simple admin login window (JavaFX).
 public class LoginFrame extends Stage {
-    private final TextField usernameField;
-    private final PasswordField passwordField;
-    private final TextField passwordVisibleField;
+    private TextField usernameField;
+    private PasswordField passwordField;
+    private TextField passwordVisibleField;
     private final AdminDAO adminDAO;
-    private final Label usernameError;
-    private final Label passwordError;
-    private final Label statusLabel;
+    private Label usernameError;
+    private Label passwordError;
+    private Label statusLabel;
 
     public LoginFrame() {
         adminDAO = new AdminDAO();
 
         setTitle("Naval Blood Donation Archive System - Login");
 
-        BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: " + UIStyle.BG + ";");
+        StackPane photoPane = createPhotoPane();
+        VBox authPane = createAuthPane();
 
-        // Left branding panel.
-        VBox brandPanel = new VBox(8);
-        brandPanel.setAlignment(Pos.CENTER);
-        brandPanel.setStyle("-fx-background-color: " + UIStyle.PRIMARY + ";");
-        brandPanel.setPrefWidth(180);
+        BorderPane layout = new BorderPane();
+        layout.setLeft(photoPane);
+        layout.setCenter(authPane);
+        layout.setStyle("-fx-background-color: #F5F7FB;");
 
-        Label brandTitle = new Label("NBDA");
-        brandTitle.setTextFill(Color.WHITE);
-        brandTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 28));
+        photoPane.prefWidthProperty().bind(layout.widthProperty().multiply(0.58));
+        authPane.prefWidthProperty().bind(layout.widthProperty().multiply(0.42));
 
-        Label brandSubtitle = new Label("Blood Archive");
-        brandSubtitle.setTextFill(Color.web("#dcebf5"));
-        brandSubtitle.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 12));
+        Scene scene = new Scene(layout, 1360, 760);
+        setScene(scene);
+        setMaximized(true);
+    }
 
-        brandPanel.getChildren().addAll(brandTitle, brandSubtitle);
+    private StackPane createPhotoPane() {
+        ImageView backgroundView = new ImageView(new Image(
+                Paths.get("assets", "images", "blood.jpg").toUri().toString(),
+                true
+        ));
+        backgroundView.setPreserveRatio(false);
+        backgroundView.setSmooth(true);
 
-        // Card panel provides a clean elevated area for login fields.
+        Region darkOverlay = new Region();
+        darkOverlay.setStyle(
+                "-fx-background-color: linear-gradient(to bottom, rgba(8,14,24,0.42), rgba(8,14,24,0.58));"
+        );
+
+        StackPane pane = new StackPane(backgroundView, darkOverlay);
+        pane.setMinWidth(520);
+        backgroundView.fitWidthProperty().bind(pane.widthProperty());
+        backgroundView.fitHeightProperty().bind(pane.heightProperty());
+        darkOverlay.prefWidthProperty().bind(pane.widthProperty());
+        darkOverlay.prefHeightProperty().bind(pane.heightProperty());
+        return pane;
+    }
+
+    private VBox createAuthPane() {
+        VBox pane = new VBox();
+        pane.setAlignment(Pos.CENTER);
+        pane.setPadding(new Insets(42, 56, 42, 56));
+        pane.setStyle("-fx-background-color: linear-gradient(to bottom, #FAFBFD, #F2F5F9);");
+
+        VBox shell = new VBox(20);
+        shell.setAlignment(Pos.CENTER_LEFT);
+        shell.setMaxWidth(430);
+
+        Label brand = new Label("Naval Blood Donation Archive");
+        brand.setTextFill(Color.web(UIStyle.PRIMARY));
+        brand.setFont(Font.font("Segoe UI", FontWeight.BOLD, 15));
+
+        Label title = new Label("Secure Staff Login");
+        title.setTextFill(Color.web(UIStyle.TEXT));
+        title.setFont(Font.font("Segoe UI", FontWeight.EXTRA_BOLD, 32));
+
+        Label subtitle = new Label("Sign in to continue managing donor records, donations, and blood inventory.");
+        subtitle.setWrapText(true);
+        subtitle.setTextFill(Color.web(UIStyle.MUTED));
+        subtitle.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 14));
+
         GridPane formPanel = new GridPane();
-        formPanel.setHgap(12);
-        formPanel.setVgap(12);
-        formPanel.setAlignment(Pos.CENTER);
-        UIStyle.applyCardStyle(formPanel);
+        formPanel.setHgap(0);
+        formPanel.setVgap(10);
+        formPanel.setPadding(new Insets(28));
+        formPanel.setMaxWidth(420);
+        formPanel.setStyle(
+                "-fx-background-color: rgba(255,255,255,0.97);" +
+                "-fx-background-radius: 26;" +
+                "-fx-border-color: #E4EBF2;" +
+                "-fx-border-radius: 26;" +
+                "-fx-effect: dropshadow(gaussian, rgba(24,39,75,0.12), 32, 0.18, 0, 10);"
+        );
 
-        Label title = UIStyle.titleLabel("Admin Login");
-        Label subtitle = UIStyle.subtitleLabel("Secure access for hospital staff");
+        ColumnConstraints column = new ColumnConstraints();
+        column.setHgrow(Priority.ALWAYS);
+        formPanel.getColumnConstraints().add(column);
 
-        formPanel.add(title, 0, 0, 2, 1);
-        formPanel.add(subtitle, 0, 1, 2, 1);
+        int row = 0;
+        Label formTitle = new Label("Admin account");
+        formTitle.setTextFill(Color.web(UIStyle.TEXT));
+        formTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
+        formPanel.add(formTitle, 0, row++);
 
-        Label userLabel = new Label("Username *");
-        userLabel.setFont(UIStyle.BODY);
-        userLabel.setTextFill(Color.web(UIStyle.MUTED));
-        formPanel.add(userLabel, 0, 2);
+        Label formHelp = new Label("Use your assigned username and password.");
+        formHelp.setTextFill(Color.web(UIStyle.MUTED));
+        formHelp.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 13));
+        formPanel.add(formHelp, 0, row++);
+
+        Region spacer1 = new Region();
+        spacer1.setMinHeight(6);
+        formPanel.add(spacer1, 0, row++);
+
+        Label userLabel = UIStyle.formLabel("Username");
+        formPanel.add(userLabel, 0, row++);
 
         usernameField = new TextField();
         UIStyle.applyInputStyle(usernameField);
-        usernameField.setPrefWidth(220);
-        formPanel.add(usernameField, 1, 2);
+        usernameField.setPromptText("Enter username");
+        usernameField.setPrefHeight(44);
+        formPanel.add(usernameField, 0, row++);
 
+        usernameError = UIStyle.errorLabel();
+        formPanel.add(usernameError, 0, row++);
 
-        Label passLabel = new Label("Password *");
-        passLabel.setFont(UIStyle.BODY);
-        passLabel.setTextFill(Color.web(UIStyle.MUTED));
-        formPanel.add(passLabel, 0, 3);
+        Label passLabel = UIStyle.formLabel("Password");
+        formPanel.add(passLabel, 0, row++);
 
         passwordField = new PasswordField();
         UIStyle.applyInputStyle(passwordField);
-        passwordField.setPrefWidth(220);
+        passwordField.setPromptText("Enter password");
+        passwordField.setPrefHeight(44);
 
         passwordVisibleField = new TextField();
         UIStyle.applyInputStyle(passwordVisibleField);
-        passwordVisibleField.setPrefWidth(220);
+        passwordVisibleField.setPromptText("Enter password");
+        passwordVisibleField.setPrefHeight(44);
         passwordVisibleField.setManaged(false);
         passwordVisibleField.setVisible(false);
 
         StackPane passwordStack = new StackPane(passwordField, passwordVisibleField);
-        formPanel.add(passwordStack, 1, 3);
+        formPanel.add(passwordStack, 0, row++);
 
+        passwordError = UIStyle.errorLabel();
+        formPanel.add(passwordError, 0, row++);
 
-        usernameError = new Label("");
-        usernameError.setTextFill(Color.web("#c0392b"));
-        usernameError.setStyle("-fx-font-size: 11px;");
-        formPanel.add(usernameError, 1, 4);
+        CheckBox showPassword = new CheckBox("Show password");
+        showPassword.setTextFill(Color.web(UIStyle.MUTED));
+        showPassword.setOnAction(e -> togglePasswordVisibility(showPassword.isSelected()));
+        formPanel.add(showPassword, 0, row++);
 
-        passwordError = new Label("");
-        passwordError.setTextFill(Color.web("#c0392b"));
-        passwordError.setStyle("-fx-font-size: 11px;");
-        formPanel.add(passwordError, 1, 5);
+        statusLabel = UIStyle.errorLabel();
+        formPanel.add(statusLabel, 0, row++);
 
-        statusLabel = new Label("");
-        statusLabel.setTextFill(Color.web("#c0392b"));
-        statusLabel.setStyle("-fx-font-size: 11px;");
+        Region spacer2 = new Region();
+        spacer2.setMinHeight(4);
+        formPanel.add(spacer2, 0, row++);
+
+        Button loginBtn = UIStyle.primaryButton("Login", "login");
+        loginBtn.setMaxWidth(Double.MAX_VALUE);
+        loginBtn.setPrefHeight(46);
+        loginBtn.setOnAction(e -> handleLogin());
+        loginBtn.setDefaultButton(true);
+        formPanel.add(loginBtn, 0, row);
+
+        GridPane.setHalignment(formTitle, HPos.LEFT);
+        GridPane.setHalignment(formHelp, HPos.LEFT);
+
+        loginBtn.disableProperty().bind(Bindings.createBooleanBinding(
+                () -> usernameField.getText().trim().isEmpty() || getPassword().trim().isEmpty(),
+                usernameField.textProperty(),
+                passwordField.textProperty(),
+                passwordVisibleField.textProperty()
+        ));
 
         usernameField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (!newVal.trim().isEmpty()) {
@@ -123,31 +211,6 @@ public class LoginFrame extends Stage {
                 passwordError.setText("");
                 statusLabel.setText("");
             }
-        });
-
-        javafx.scene.layout.GridPane.setHalignment(title, javafx.geometry.HPos.CENTER);
-        javafx.scene.layout.GridPane.setHalignment(subtitle, javafx.geometry.HPos.CENTER);
-        javafx.scene.layout.GridPane.setHalignment(userLabel, javafx.geometry.HPos.CENTER);
-        javafx.scene.layout.GridPane.setHalignment(usernameField, javafx.geometry.HPos.CENTER);
-        javafx.scene.layout.GridPane.setHalignment(passLabel, javafx.geometry.HPos.CENTER);
-        javafx.scene.layout.GridPane.setHalignment(passwordStack, javafx.geometry.HPos.CENTER);
-
-        CheckBox showPassword = new CheckBox("Show password");
-        showPassword.setTextFill(Color.web(UIStyle.MUTED));
-        showPassword.setOnAction(e -> {
-            boolean show = showPassword.isSelected();
-            if (show) {
-                passwordVisibleField.setText(passwordField.getText());
-            } else {
-                passwordField.setText(passwordVisibleField.getText());
-            }
-            passwordVisibleField.setVisible(show);
-            passwordVisibleField.setManaged(show);
-            passwordField.setVisible(!show);
-            passwordField.setManaged(!show);
-        });
-
-        passwordField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (!passwordVisibleField.isVisible()) {
                 passwordVisibleField.setText(newVal);
             }
@@ -159,33 +222,21 @@ public class LoginFrame extends Stage {
             }
         });
 
-        Button loginBtn = UIStyle.primaryButton("Login");
-        loginBtn.setOnAction(e -> handleLogin());
-        loginBtn.setDefaultButton(true);
+        shell.getChildren().addAll(brand, title, subtitle, formPanel);
+        pane.getChildren().add(shell);
+        return pane;
+    }
 
-        loginBtn.disableProperty().bind(Bindings.createBooleanBinding(
-                () -> usernameField.getText().trim().isEmpty() || getPassword().trim().isEmpty(),
-                usernameField.textProperty(),
-                passwordField.textProperty(),
-                passwordVisibleField.textProperty()
-        ));
-
-        HBox loginRow = new HBox(12, showPassword, loginBtn);
-        loginRow.setAlignment(Pos.CENTER);
-        formPanel.add(loginRow, 1, 6);
-        javafx.scene.layout.GridPane.setHalignment(loginRow, javafx.geometry.HPos.CENTER);
-
-        formPanel.add(statusLabel, 1, 7);
-
-        StackPane cardWrap = new StackPane(formPanel);
-        cardWrap.setPadding(new Insets(16));
-
-        root.setLeft(brandPanel);
-        root.setCenter(cardWrap);
-
-        Scene scene = new Scene(root, 520, 320);
-        setScene(scene);
-        setMaximized(true);
+    private void togglePasswordVisibility(boolean show) {
+        if (show) {
+            passwordVisibleField.setText(passwordField.getText());
+        } else {
+            passwordField.setText(passwordVisibleField.getText());
+        }
+        passwordVisibleField.setVisible(show);
+        passwordVisibleField.setManaged(show);
+        passwordField.setVisible(!show);
+        passwordField.setManaged(!show);
     }
 
     private void handleLogin() {
@@ -211,6 +262,7 @@ public class LoginFrame extends Stage {
 
         AdminDAO.LoginResult result = adminDAO.authenticate(username, password);
         if (result.success) {
+            AdminSession.start(result.adminId, result.username);
             DashboardFrame.showWindow();
             close();
         } else {

@@ -1,0 +1,9 @@
+-- V2 donor realism fields.
+USE blood_archive;
+
+ALTER TABLE donor_table ADD COLUMN sex ENUM('M','F') NULL;
+ALTER TABLE donor_table ADD COLUMN birth_date DATE NULL;
+ALTER TABLE donor_table ADD COLUMN email VARCHAR(120) NULL;
+ALTER TABLE donor_table ADD COLUMN deferred_until DATE NULL;
+ALTER TABLE donor_table ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE donor_table ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP;

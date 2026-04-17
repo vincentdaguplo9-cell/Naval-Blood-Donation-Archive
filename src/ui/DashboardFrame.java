@@ -3,20 +3,24 @@ package ui;
 import dao.BloodUnitDAO;
 import dao.DonorDAO;
 import dao.TransactionDAO;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import model.DonationTransaction;
 import model.Donor;
@@ -43,66 +47,119 @@ public class DashboardFrame extends Stage {
         txDAO = new TransactionDAO();
 
         setTitle("Naval Blood Donation Archive System - Dashboard");
+        setOnCloseRequest(e -> {
+            Alert confirm = new Alert(
+                    Alert.AlertType.CONFIRMATION,
+                    "Do you want to exit the program?",
+                    ButtonType.OK,
+                    ButtonType.CANCEL
+            );
+            confirm.setHeaderText("Exit Confirmation");
+            confirm.showAndWait().ifPresent(btn -> {
+                if (btn == ButtonType.OK) {
+                    Platform.exit();
+                } else {
+                    e.consume();
+                }
+            });
+        });
 
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: " + UIStyle.BG + ";");
-        root.setPadding(new Insets(12));
+        root.setStyle(UIStyle.pageBackground());
+        root.setPadding(new Insets(0));
+
+        // App header.
+        Button labBtn = UIStyle.secondaryButton("Lab Testing", "lab");
+        labBtn.setOnAction(e -> LabTestingFrame.showWindow());
+        Button adminBtn = UIStyle.secondaryButton("Admin Profile", "dashboard");
+        adminBtn.setOnAction(e -> AdminProfileFrame.showWindow());
+        Button reportsBtn = UIStyle.secondaryButton("Reports", "report");
+        reportsBtn.setOnAction(e -> ReportFrame.showWindow());
+        HBox header = UIStyle.appHeader("Dashboard", adminBtn, labBtn, reportsBtn);
+
+        VBox topWrap = new VBox(10);
+        topWrap.getChildren().add(header);
+        topWrap.setPadding(new Insets(0, 0, 8, 0));
 
         // Top stats bar for quick hospital overview.
         HBox statsPanel = new HBox(12);
         totalDonorsLabel = UIStyle.statLabel("Total Donors: 0");
         totalUnitsLabel = UIStyle.statLabel("Total Blood Units: 0");
         availableUnitsLabel = UIStyle.statLabel("Available Units: 0");
+        makeStatCardClickable(totalDonorsLabel, "Click to open donor records.", DonorListFrame::showWindow);
+        makeStatCardClickable(totalUnitsLabel, "Click to open all blood units with filters.", () ->
+                InventoryFrame.showWindow("All", "All", "All"));
+        makeStatCardClickable(availableUnitsLabel, "Click to open available blood units with filters.", () ->
+                InventoryFrame.showWindow("AVAILABLE", "All", "All"));
         statsPanel.getChildren().addAll(totalDonorsLabel, totalUnitsLabel, availableUnitsLabel);
 
-        Button refreshBtn = UIStyle.primaryButton("Refresh");
+        Button refreshBtn = UIStyle.primaryButton("Refresh", "refresh");
         refreshBtn.setOnAction(e -> refreshDashboard());
         lastUpdatedLabel = new Label("");
         lastUpdatedLabel.setTextFill(javafx.scene.paint.Color.web(UIStyle.MUTED));
         lastUpdatedLabel.setStyle("-fx-font-size: 12px;");
         VBox refreshBox = new VBox(6, refreshBtn, lastUpdatedLabel);
         refreshBox.setAlignment(Pos.CENTER_RIGHT);
+        UIStyle.applyPanelStyle(refreshBox);
+        refreshBox.setPadding(new Insets(12));
 
         HBox topBar = new HBox(12, statsPanel, refreshBox);
         HBox.setHgrow(statsPanel, Priority.ALWAYS);
+        topBar.setPadding(new Insets(0, 12, 0, 12));
+        topWrap.getChildren().add(topBar);
 
         recentTable = new TableView<>();
         UIStyle.applyTableStyle(recentTable);
+        recentTable.setPlaceholder(UIStyle.helperLabel("No recent transactions yet. Record a donation to begin the traceability log."));
         configureRecentTable();
         applyZebraRows();
 
         recentDonorTable = new TableView<>();
         UIStyle.applyTableStyle(recentDonorTable);
+        recentDonorTable.setPlaceholder(UIStyle.helperLabel("No recent donors yet. Add a donor to start building the registry."));
         configureRecentDonorTable();
         applyDonorZebraRows();
 
         // Action buttons for main workflows.
-        HBox actionsPanel = new HBox(10);
-        actionsPanel.setAlignment(Pos.CENTER);
-        Button donorsBtn = UIStyle.primaryButton("Donor Management");
+        HBox actionsPanel = new HBox(12);
+        actionsPanel.setAlignment(Pos.CENTER_LEFT);
+        actionsPanel.setPadding(new Insets(10, 12, 12, 12));
+        Button donorsBtn = UIStyle.primaryButton("1. Add Donor", "donor");
         donorsBtn.setOnAction(e -> DonorListFrame.showWindow());
+        donorsBtn.setMaxWidth(Double.MAX_VALUE);
 
-        Button donationBtn = UIStyle.primaryButton("Record Donation");
+        Button donationBtn = UIStyle.primaryButton("2. Record Donation", "bloodbag");
         donationBtn.setOnAction(e -> DonationForm.showWindow());
+        donationBtn.setMaxWidth(Double.MAX_VALUE);
 
-        Button inventoryBtn = UIStyle.primaryButton("Blood Inventory");
-        inventoryBtn.setOnAction(e -> InventoryFrame.showWindow());
+        Button labQuickBtn = UIStyle.primaryButton("3. Run Lab Testing", "lab");
+        labQuickBtn.setOnAction(e -> LabTestingFrame.showWindow());
+        labQuickBtn.setMaxWidth(Double.MAX_VALUE);
 
-        Button reportBtn = UIStyle.primaryButton("Reports");
-        reportBtn.setOnAction(e -> ReportFrame.showWindow());
+        Region donorCard = createActionCard("Register a donor", "Create or update donor records before collection.", donorsBtn);
+        Region donationCard = createActionCard("Capture collection", "Enter volume, dates, staff ID, and screening details.", donationBtn);
+        Region labCard = createActionCard("Release units", "Review pending units and mark them passed or failed.", labQuickBtn);
+        HBox.setHgrow(donorCard, Priority.ALWAYS);
+        HBox.setHgrow(donationCard, Priority.ALWAYS);
+        HBox.setHgrow(labCard, Priority.ALWAYS);
+        actionsPanel.getChildren().addAll(donorCard, donationCard, labCard);
 
-        actionsPanel.getChildren().addAll(donorsBtn, donationBtn, inventoryBtn, reportBtn);
+        VBox transactionPanel = createPortraitPanel(
+                "Recent Transactions",
+                "Latest donation activity with only the key traceability details.",
+                recentTable
+        );
+        VBox donorPanel = createPortraitPanel(
+                "Recent Donors",
+                "Newest donor records with quick eligibility and blood type visibility.",
+                recentDonorTable
+        );
+        HBox centerBox = new HBox(12, transactionPanel, donorPanel);
+        centerBox.setPadding(new Insets(12));
+        HBox.setHgrow(transactionPanel, Priority.ALWAYS);
+        HBox.setHgrow(donorPanel, Priority.ALWAYS);
 
-        Label txTitle = UIStyle.subtitleLabel("Recent Transactions");
-        Label donorTitle = UIStyle.subtitleLabel("Recent Donors");
-
-        VBox centerBox = new VBox(12, txTitle, recentTable, donorTitle, recentDonorTable);
-        VBox.setMargin(recentTable, new Insets(0, 0, 0, 0));
-        VBox.setMargin(recentDonorTable, new Insets(0, 0, 0, 0));
-        VBox.setVgrow(recentTable, Priority.ALWAYS);
-        VBox.setVgrow(recentDonorTable, Priority.ALWAYS);
-
-        root.setTop(topBar);
+        root.setTop(topWrap);
         root.setCenter(centerBox);
         root.setBottom(actionsPanel);
 
@@ -118,36 +175,25 @@ public class DashboardFrame extends Stage {
             instance = new DashboardFrame();
             instance.setOnHidden(e -> instance = null);
         }
+        instance.setIconified(false);
         instance.show();
         instance.toFront();
     }
 
     private void configureRecentTable() {
-        TableColumn<RecentTransactionRow, Integer> txIdCol = new TableColumn<>("Transaction ID");
-        txIdCol.setCellValueFactory(new PropertyValueFactory<>("transactionId"));
-
         TableColumn<RecentTransactionRow, String> donorCol = new TableColumn<>("Donor");
         donorCol.setCellValueFactory(new PropertyValueFactory<>("donorName"));
 
-        TableColumn<RecentTransactionRow, Integer> unitCol = new TableColumn<>("Unit ID");
+        TableColumn<RecentTransactionRow, Integer> unitCol = new TableColumn<>("Unit");
         unitCol.setCellValueFactory(new PropertyValueFactory<>("unitId"));
 
-        TableColumn<RecentTransactionRow, Integer> staffCol = new TableColumn<>("Staff ID");
-        staffCol.setCellValueFactory(new PropertyValueFactory<>("staffId"));
-
-        TableColumn<RecentTransactionRow, String> dateCol = new TableColumn<>("Transaction Date");
+        TableColumn<RecentTransactionRow, String> dateCol = new TableColumn<>("Date");
         dateCol.setCellValueFactory(new PropertyValueFactory<>("transactionDate"));
 
-        TableColumn<RecentTransactionRow, String> remarksCol = new TableColumn<>("Remarks");
-        remarksCol.setCellValueFactory(new PropertyValueFactory<>("remarks"));
-
-        recentTable.getColumns().addAll(txIdCol, donorCol, unitCol, staffCol, dateCol, remarksCol);
+        recentTable.getColumns().addAll(donorCol, unitCol, dateCol);
     }
 
     private void configureRecentDonorTable() {
-        TableColumn<Donor, Integer> idCol = new TableColumn<>("ID");
-        idCol.setCellValueFactory(new PropertyValueFactory<>("donorId"));
-
         TableColumn<Donor, String> nameCol = new TableColumn<>("Name");
         nameCol.setCellValueFactory(cell ->
                 new javafx.beans.property.SimpleStringProperty(
@@ -163,8 +209,38 @@ public class DashboardFrame extends Stage {
 
         TableColumn<Donor, String> eligibilityCol = new TableColumn<>("Eligibility");
         eligibilityCol.setCellValueFactory(new PropertyValueFactory<>("eligibilityStatus"));
+        UIStyle.applyStatusBadgeColumn(eligibilityCol);
 
-        recentDonorTable.getColumns().addAll(idCol, nameCol, bloodCol, lastDonationCol, eligibilityCol);
+        recentDonorTable.getColumns().addAll(nameCol, bloodCol, eligibilityCol);
+    }
+
+    private Region createActionCard(String title, String body, Button actionButton) {
+        Label titleLabel = UIStyle.formLabel(title);
+        Label bodyLabel = UIStyle.helperLabel(body);
+        VBox box = new VBox(8, titleLabel, bodyLabel, actionButton);
+        UIStyle.applyPanelStyle(box);
+        box.setPadding(new Insets(16));
+        VBox.setVgrow(actionButton, Priority.NEVER);
+        return box;
+    }
+
+    private VBox createPortraitPanel(String title, String body, TableView<?> table) {
+        Label titleLabel = UIStyle.subtitleLabel(title);
+        Label bodyLabel = UIStyle.helperLabel(body);
+        VBox panel = new VBox(10, titleLabel, bodyLabel, table);
+        UIStyle.applyPanelStyle(panel);
+        panel.setPadding(new Insets(16));
+        panel.setPrefWidth(420);
+        VBox.setVgrow(table, Priority.ALWAYS);
+        return panel;
+    }
+
+    private void makeStatCardClickable(Label card, String hint, Runnable action) {
+        card.setStyle(card.getStyle() + "-fx-cursor: hand;");
+        card.setOnMouseClicked(e -> action.run());
+        card.setOnMouseEntered(e -> card.setOpacity(0.92));
+        card.setOnMouseExited(e -> card.setOpacity(1.0));
+        card.setTooltip(new javafx.scene.control.Tooltip(hint));
     }
 
     private void applyZebraRows() {
@@ -177,11 +253,7 @@ public class DashboardFrame extends Stage {
                 } else if (isSelected()) {
                     setStyle("");
                 } else {
-                    if (getIndex() % 2 == 0) {
-                        setStyle("-fx-background-color: #ffffff;");
-                    } else {
-                        setStyle("-fx-background-color: #f5f7fa;");
-                    }
+                    setStyle(UIStyle.lightRowStyle(getIndex()));
                 }
             }
         });
@@ -197,11 +269,7 @@ public class DashboardFrame extends Stage {
                 } else if (isSelected()) {
                     setStyle("");
                 } else {
-                    if (getIndex() % 2 == 0) {
-                        setStyle("-fx-background-color: #ffffff;");
-                    } else {
-                        setStyle("-fx-background-color: #f5f7fa;");
-                    }
+                    setStyle(UIStyle.lightRowStyle(getIndex()));
                 }
             }
         });
